@@ -16,6 +16,43 @@
  *   4. Switch to it via `data-theme` on <html> in index.html.
  */
 
+/* War Room — dark command-center theme for the GTM pipeline board.
+ * Deep charcoal surfaces, amber primary (the "war room" signal color),
+ * cyan secondary accents. color-scheme: dark so native controls match. */
+[data-theme="warroom"] {
+  color-scheme: dark;
+  --color-background: #0b0d10;
+  --color-foreground: #eceff3;
+  --color-card: #14181d;
+  --color-card-foreground: #eceff3;
+  --color-popover: #161a20;
+  --color-popover-foreground: #eceff3;
+  --color-primary: #f5a524;
+  --color-primary-foreground: #1a1206;
+  --color-secondary: #1c232b;
+  --color-secondary-foreground: #d7dee7;
+  --color-muted: #1c232b;
+  --color-muted-foreground: #8b95a3;
+  --color-accent: #233039;
+  --color-accent-foreground: #eceff3;
+  --color-destructive: #f2555a;
+  --color-destructive-foreground: #ffffff;
+  --color-border: rgba(120, 135, 150, 0.22);
+  --color-input: rgba(120, 135, 150, 0.28);
+  --color-ring: #f5a524;
+  --color-success: #34d399;
+  --color-success-foreground: #06281c;
+  --color-warning: #f5a524;
+  --color-warning-foreground: #1a1206;
+  --color-info: #22d3ee;
+  --color-info-foreground: #062a30;
+  --shadow-card: 0 2px 6px 0 rgba(0, 0, 0, 0.4);
+  --shadow-card-hover: 0 4px 16px 0 rgba(245, 165, 36, 0.12);
+  --color-shell: #0b0d10;
+  --color-shell-panel: #14181d;
+  --radius: 0.625rem;
+}
+
 /* Paper — light example theme; shows the full token contract incl.
  * `color-scheme: light`. Replace or delete it once the app has its own. */
 [data-theme="paper"] {

@@ -18,6 +18,11 @@
 
 export const THEMES = [
   {
+    id: 'warroom',
+    label: 'War Room',
+    description: 'Dark command-center theme — amber signals on deep charcoal.',
+  },
+  {
     id: 'slate',
     label: 'Slate',
     description: 'Neutral dark placeholder default. Replace with your own theme.',

@@ -12,6 +12,8 @@ import type { ToolSet } from 'ai'
 import { z } from 'zod/v4'
 import { BUILT_IN_TOOLS, applyAiToolDefaults } from 'deepspace/worker'
 import type { ToolSchema, CollectionSchema } from 'deepspace/worker'
+import { scoreLead, buildOutreach } from '../lib/scoring.js'
+import type { Lead } from '../schemas/leads-schema.js'
 
 type ToolExecutor = (toolName: string, params: Record<string, unknown>) => Promise<unknown>
 
@@ -94,7 +96,74 @@ export function buildTools(executor: ToolExecutor): ToolSet {
     })
   }
 
+  // --- Custom GTM tools -----------------------------------------------------
+  // Deterministic, explainable, no LLM. They run through the same executor as
+  // the built-ins, so the calling user's RBAC applies to every read/write.
+
+  const leadIdInput = (name: string, description: string): ToolSchema => ({
+    name,
+    description,
+    params: {
+      leadId: { type: 'string', description: 'Lead record ID', required: true },
+    },
+  })
+
+  tools.score_lead = tool({
+    description:
+      'Score a lead 0-100 with a deterministic rubric (signal strength 0-40, contact seniority 0-30, company fit 0-30) and write the score back to the lead record. Returns { score, reasons }. Runs as the calling user; RBAC applies.',
+    inputSchema: buildInputSchema(
+      leadIdInput('score_lead', 'Score a lead and persist the score'),
+    ),
+    execute: async (params: Record<string, unknown>) => {
+      const leadId = params.leadId as string
+      const result = await executor('records.get', { collection: 'leads', recordId: leadId })
+      const lead = recordData(result) as unknown as Lead
+      if (!lead.company) throw new Error(`Lead not found: ${leadId}`)
+      const breakdown = scoreLead(lead)
+      await executor('records.update', {
+        collection: 'leads',
+        recordId: leadId,
+        data: { score: breakdown.score },
+      })
+      return { score: breakdown.score, reasons: breakdown.reasons }
+    },
+  })
+
+  tools.draft_outreach = tool({
+    description:
+      'Draft a personalized first-touch outreach email (subject + body) for a lead, built from its company, contact, and signals. Returns the draft only — it never writes anything. Runs as the calling user; RBAC applies.',
+    inputSchema: buildInputSchema(
+      leadIdInput('draft_outreach', 'Draft a first-touch email for a lead'),
+    ),
+    execute: async (params: Record<string, unknown>) => {
+      const leadId = params.leadId as string
+      const result = await executor('records.get', { collection: 'leads', recordId: leadId })
+      const lead = recordData(result) as unknown as Lead
+      if (!lead.company) throw new Error(`Lead not found: ${leadId}`)
+      return buildOutreach(lead)
+    },
+  })
+
   return tools
+}
+
+/**
+ * The executor returns the RecordRoom's whole result for records.get — shape
+ * varies (envelope vs. bare row), so unwrap defensively to the data payload.
+ */
+function recordData(result: unknown): Record<string, unknown> {
+  if (result && typeof result === 'object') {
+    const r = result as Record<string, unknown>
+    if (r.data && typeof r.data === 'object') return r.data as Record<string, unknown>
+    const rec = r.record
+    if (rec && typeof rec === 'object') {
+      const inner = (rec as Record<string, unknown>).data
+      if (inner && typeof inner === 'object') return inner as Record<string, unknown>
+      return rec as Record<string, unknown>
+    }
+    return r
+  }
+  return {}
 }
 
 // ============================================================================
